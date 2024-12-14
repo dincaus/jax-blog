@@ -1,0 +1,6 @@
+datasets~=3.1
+nltk~=3.9
+scikit-learn~=1.5
+plotly~=5.24
+tqdm~=4.67
+seaborn~=0.13
