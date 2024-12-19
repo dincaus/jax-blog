@@ -78,70 +78,38 @@ def generate_training_text(
         to_ids: bool = False
 ):
     len_tokens = len(tokens)
-    range_len = len(range(window_size + 1, len_tokens - window_size - 1, stride))
 
-    # negative_samples_generated = None
-    # if number_of_negatives:
-    #     negative_samples_generated = np.random.choice(
-    #         list(vocabulary.keys()),
-    #         size=(range_len, number_of_negatives),
-    #         p=token_probabilities
-    #     )
-
-    # batch_context, batch_positives, batch_negatives = [], [], []
     batch_context, batch_positives = [], []
     for token_idx in range(window_size + 1, len_tokens - window_size - 1, stride):
         left_context = tokens[token_idx - window_size:token_idx]
         right_context = tokens[token_idx + 1:token_idx + window_size + 1]
-
-        # negative_samples = []
-        # if number_of_negatives:
-        #     negative_samples = negative_samples_generated[token_idx - window_size - 1, :] if negative_samples_generated is not None else []
-        #
-        #     while tokens[token_idx] in negative_samples:
-        #         negative_samples = np.random.choice(
-        #             list(vocabulary.keys()),
-        #             size=(number_of_negatives, ),
-        #             p=token_probabilities
-        #         )
-
         if to_ids:
             left_context_vector = [vocabulary.get(word, vocabulary["<unk>"]) for word in left_context]
             right_context_vector = [vocabulary.get(word, vocabulary["<unk>"]) for word in right_context]
             target_vector = vocabulary.get(tokens[token_idx], vocabulary["<unk>"])
 
             context_vector = left_context_vector + right_context_vector
-            # negative_samples_vector = negative_samples
-            # negative_samples_vector = [vocabulary.get(word, vocabulary["<unk>"]) for word in negative_samples]
         else:
             left_context_vector = left_context
             right_context_vector = right_context
             target_vector = tokens[token_idx]
 
             context_vector = left_context_vector + right_context_vector
-            # negative_samples_vector = negative_samples
+
 
         if target_vector == vocabulary["<unk>"]:
             continue
 
 
         if batch_size is None:
-            # yield context_vector, [target_vector, ], negative_samples_vector
             yield context_vector, [target_vector, ]
         else:
             batch_context.append(context_vector)
             batch_positives.append(target_vector)
-            # batch_negatives.append(negative_samples_vector)
 
             if len(batch_positives) == batch_size:
                 yield np.array(batch_context), np.array(batch_positives)
                 batch_context, batch_positives = [], []
-
-                # yield np.array(batch_context), np.array(batch_positives), np.array(batch_negatives)
-                # batch_context, batch_positives, batch_negatives = [], [], []
-
-    # if len(batch_positives) > 0 or len(batch_context) > 0 or len(batch_negatives) > 0:
-    #     yield np.array(batch_context), np.array(batch_positives), np.array(batch_negatives)
 
     if len(batch_positives) > 0 or len(batch_context) > 0:
         yield np.array(batch_context), np.array(batch_positives)
