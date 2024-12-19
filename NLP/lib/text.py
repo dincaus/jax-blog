@@ -75,8 +75,15 @@ def generate_training_text(
         window_size: int = 2,
         stride: int = 1,
         batch_size: int | None = None,
-        to_ids: bool = False
+        to_ids: bool = False,
+        shuffle: bool = False
 ):
+
+    def __shuffle(_batch_context, _batch_positives):
+        _indices = np.random.permutation(_batch_positives.shape[0])
+
+        return _batch_context[_indices], _batch_positives[_indices]
+
     len_tokens = len(tokens)
 
     batch_context, batch_positives = [], []
@@ -108,11 +115,23 @@ def generate_training_text(
             batch_positives.append(target_vector)
 
             if len(batch_positives) == batch_size:
-                yield np.array(batch_context), np.array(batch_positives)
+                batch_context = np.array(batch_context)
+                batch_positives = np.array(batch_positives)
+
+                if shuffle:
+                    batch_context, batch_positives = __shuffle(batch_context, batch_positives)
+
+                yield batch_context, batch_positives
                 batch_context, batch_positives = [], []
 
     if len(batch_positives) > 0 or len(batch_context) > 0:
-        yield np.array(batch_context), np.array(batch_positives)
+        batch_context = np.array(batch_context)
+        batch_positives = np.array(batch_positives)
+
+        if shuffle:
+            batch_context, batch_positives = __shuffle(batch_context, batch_positives)
+
+        yield batch_context, batch_positives
 
 
 def generate_training_text_w_negative_samples(
@@ -123,7 +142,8 @@ def generate_training_text_w_negative_samples(
         batch_size: int | None = None,
         to_ids: bool = False,
         number_of_negatives: int | None = 5,
-        token_probabilities: np.ndarray | None = None
+        token_probabilities: np.ndarray | None = None,
+        shuffle: bool = False
 ):
     len_tokens = len(tokens)
     range_len = len(range(window_size + 1, len_tokens - window_size - 1, stride))
@@ -178,7 +198,17 @@ def generate_training_text_w_negative_samples(
             batch_negatives.append(negative_samples_vector)
 
             if len(batch_positives) == batch_size:
-                yield np.array(batch_context), np.array(batch_positives), np.array(batch_negatives)
+                batch_context = np.array(batch_context)
+                batch_positives = np.array(batch_positives)
+                batch_negatives = np.array(batch_negatives)
+
+                if shuffle:
+                    indices = np.random.permutation(len(batch_positives))
+                    batch_context = batch_context[indices]
+                    batch_positives = batch_positives[indices]
+                    batch_negatives = batch_negatives[indices]
+
+                yield batch_context, batch_positives, batch_negatives
                 batch_context, batch_positives, batch_negatives = [], [], []
 
     if len(batch_positives) > 0 or len(batch_context) > 0 or len(batch_negatives) > 0:
