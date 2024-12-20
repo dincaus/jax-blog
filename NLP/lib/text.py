@@ -215,18 +215,13 @@ def generate_training_text_w_negative_samples(
         yield np.array(batch_context), np.array(batch_positives), np.array(batch_negatives)
 
 
-def shuffle_dataset(dataset):
-    np.random.shuffle(dataset)
+def shuffle_batch(batch_context, batch_target, batch_negatives=None):
+    indices = np.random.permutation(len(batch_target))
 
-    for (context_vector, target_vector) in dataset:
-        yield context_vector, target_vector
-
-
-def shuffle_dataset_w_negative_samples(dataset):
-    np.random.shuffle(dataset)
-
-    for (context_vector, target_vector, negative_samples) in dataset:
-        yield context_vector, target_vector, negative_samples
+    if batch_negatives is None:
+        return batch_context[indices], batch_target[indices]
+    else:
+        return batch_context[indices], batch_target[indices], batch_negatives[indices]
 
 
 def preprocess_text(text):
